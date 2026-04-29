@@ -1,240 +1,363 @@
-import { Page, Locator } from '@playwright/test'; // Importación necesaria
-
-/**
- * @fileoverview Page Object Model for the Catalog/Collections page.
- * URL: https://vanesa-qa-sandbox.myshopify.com/collections/all
- */
+import { Page, Locator } from "@playwright/test";
 
 export class CatalogPage {
-  /**
-   * @param {import('@playwright/test').Page} page - Playwright page instance.
-   */
-  constructor(page) {
+  // ── Property declarations ─────────────────────────────────────────────────
+  readonly page: Page;
+
+  // Navigation
+  readonly catalogNavLink: Locator;
+  readonly brandLogoLink: Locator;
+  readonly homeNavLink: Locator;
+  readonly contactNavLink: Locator;
+
+  // Page header
+  readonly pageHeading: Locator;
+
+  // Product grid
+  readonly productGrid: Locator;
+  readonly productCards: Locator;
+
+  // Availability badges (on cards)
+  readonly soldOutBadges: Locator;
+  readonly saleBadges: Locator;
+
+  // Sort control
+  readonly sortBySelect: Locator;
+
+  // Product count
+  readonly productCount: Locator;
+
+  // ── Filter drawer ─────────────────────────────────────────────────────────
+  readonly filterButton: Locator; // "Filter" button that opens drawer
+  readonly filterDrawer: Locator; // The drawer panel itself
+  readonly filterDrawerClose: Locator; // ✕ button on drawer
+  readonly filterDrawerTitle: Locator; // "Filter" heading inside drawer
+
+  // Filter drawer - main sections
+  readonly availabilitySection: Locator; // "Availability →" row
+  readonly priceSection: Locator; // "Price →" row
+
+  // Filter drawer - Availability sub-panel
+  readonly inStockCheckbox: Locator; // "In stock (10)"
+  readonly outOfStockCheckbox: Locator; // "Out of stock (3)"
+  readonly availabilityBackButton: Locator; // "← Availability" back arrow
+
+  // Filter drawer - Price sub-panel
+  readonly priceFromInput: Locator; // "From" input
+  readonly priceToInput: Locator; // "To" input
+  readonly priceMaxLabel: Locator; // "The highest price is $2,629.95"
+  readonly priceBackButton: Locator; // "← Price" back arrow
+
+  // Active filter pills (shown on grid after applying)
+  readonly activeFilterPills: Locator; // All active filter tags
+  readonly removeAllFiltersButton: Locator; // "Remove all" link
+
+  // Cart drawer
+  readonly cartIcon: Locator;
+  readonly cartDrawer: Locator;
+  readonly cartDrawerClose: Locator;
+
+  // Logo/brand link → navigates to homepage
+
+  constructor(page: Page) {
     this.page = page;
 
-    // ── Navigation ──────────────────────────────────────────────────────────
-    this.catalogNavLink = page.getByRole('link', { name: 'Catalog' }).first();
+    // Navigation
+    this.catalogNavLink = this.page
+      .getByRole("banner") // Selects the header/banner region
+      .getByRole("link", { name: "Catalog" });
+    // Inside your CatalogPage class
+    this.homeNavLink = this.page
+      .getByRole("banner") // Selects the header/banner region
+      .getByRole("link", { name: "Home", exact: true });
+    this.contactNavLink = this.page
+      .getByRole("banner") // Selects the header/banner region
+      .getByRole("link", {
+        name: "Contact",
+      });
 
-    // ── Page header ─────────────────────────────────────────────────────────
-    this.pageHeading = page.getByRole('heading', { name: 'Products' });
+    // Logo/brand link → navigates to homepage
+    this.brandLogoLink = page
+      .locator("header")
+      .getByRole("link", { name: "vanesa-qa-sandbox" });
 
-    // ── Product grid ─────────────────────────────────────────────────────────
-    this.productGrid = page.locator('#product-grid');
-    this.productCards = page.locator('.product-card-wrapper');
+    // Page header
+    // En el constructor de CatalogPage.ts
+    this.pageHeading = page.getByRole("heading", {
+      name: "Products",
+      level: 1,
+    });
 
-    // ── Availability badges ──────────────────────────────────────────────────
-    this.soldOutBadges = page.locator('.badge').filter({ hasText: 'Sold out' });
-    this.saleBadges    = page.locator('.badge').filter({ hasText: 'Sale' });
+    // Product grid
+    this.productGrid = page.locator("#product-grid");
+    this.productCards = page.locator(".product-card-wrapper");
 
-    // ── Sort control ─────────────────────────────────────────────────────────
-    /**
-     * Uses getByLabel, which targets the visible <label for="SortBy"> on
-     * desktop. Falls back gracefully because both desktop and mobile selects
-     * share the same label text.
-     */
-    this.sortBySelect = page.getByLabel('Sort by:').first();
+    // Availability badges (on cards)
+    this.soldOutBadges = page.locator(".badge").filter({ hasText: "Sold out" });
+    this.saleBadges = page.locator(".badge").filter({ hasText: "Sale" });
 
-    // ── Product count ────────────────────────────────────────────────────────
-    this.productCount = page.locator('#ProductCount');
+    // Sort control
+    this.sortBySelect = page.locator("#SortBy");
 
-    // ── Filter panel (mobile) ────────────────────────────────────────────────
-    this.filterButton    = page.getByRole('button', { name: /filter/i });
-    this.availabilityFilterSection = page.getByRole('button', { name: 'Availability' });
+    // Product count — e.g. "13 products" or "1 of 13 products"
+    this.productCount = page.locator("#ProductCount");
 
-    // ── Cart drawer ──────────────────────────────────────────────────────────
-    this.cartIcon        = page.getByRole('link', { name: /cart/i });
-    this.cartDrawer      = page.locator('#CartDrawer');
-    this.cartDrawerClose = page.getByRole('button', { name: 'Close' });
+    // ── Filter drawer ───────────────────────────────────────────────────────
+    this.filterButton = page.locator("summary").filter({ hasText: "Filter" });
+    this.filterDrawer = page.locator(".menu-drawer");
+    this.filterDrawerClose = page.getByRole("button", { name: "Close" });
+    this.filterDrawerTitle = page.getByRole("heading", { name: "Filter" });
+
+    // Main sections inside drawer
+    this.availabilitySection = page.getByRole("button", {
+      name: "Availability",
+    });
+    this.priceSection = page.getByRole("button", { name: "Price" });
+
+    // Availability sub-panel checkboxes
+    this.inStockCheckbox = page.getByLabel(/In stock/);
+    this.outOfStockCheckbox = page.getByLabel(/Out of stock/);
+    this.availabilityBackButton = page
+      .getByRole("button", { name: "Availability" })
+      .filter({ hasText: "←" });
+
+    // Price sub-panel inputs
+    this.priceFromInput = page.getByLabel("From");
+    this.priceToInput = page.getByLabel("To");
+    this.priceMaxLabel = page.getByText(/The highest price is/);
+    this.priceBackButton = page
+      .getByRole("button", { name: "Price" })
+      .filter({ hasText: "←" });
+
+    // Active filter pills
+    this.activeFilterPills = page.locator(".active-facets__button");
+    this.removeAllFiltersButton = page.getByRole("button", {
+      name: "Remove all",
+    });
+
+    // Cart drawer
+    this.cartIcon = page.getByRole("link", { name: /cart/i });
+    this.cartDrawer = page.locator("#CartDrawer");
+    this.cartDrawerClose = page.getByRole("button", { name: "Close" });
   }
 
   // ── Navigation ─────────────────────────────────────────────────────────────
 
+  /** Navigates directly to the catalog page. */
+  async goto(): Promise<void> {
+    await this.page.goto("/collections/all");
+    await this.productGrid.waitFor({ state: "visible" });
+  }
+
   /**
-   * Navigates directly to the catalog page.
+   * Clicks the brand logo and waits for navigation to the homepage.
    */
-  async goto() {
-    await this.page.goto('/collections/all');
-    await this.productGrid.waitFor({ state: 'visible' });
+  async clickBrandLogo(): Promise<void> {
+    await this.brandLogoLink.click();
+    await this.page.waitForURL("/");
   }
 
   // ── Dynamic product locator ────────────────────────────────────────────────
 
   /**
-   * Returns a locator for a product link inside the catalog grid,
-   * matched by its exact visible name.
-   *
-   * Usage:
-   *   const locator = catalogPage.getProductLink('The Complete Snowboard');
-   *   await locator.click();
-   *
-   * @param {string} productName - Visible product name as shown in the UI.
-   * @returns {import('@playwright/test').Locator}
+   * Returns a scoped locator for a product link inside the grid.
+   * @param productName - Visible product name.
    */
-  getProductLink(productName) {
-    /**
-     * Scope the search to the product grid to avoid matching navigation
-     * links (header / footer) that could share the same text.
-     * getByRole('link') + exact name mirrors how a real user would identify
-     * the card, keeping the locator resilient to class/id changes.
-     */
-    return this.productGrid.getByRole('link', { name: productName, exact: true }).first();
+  getProductLink(productName: string) {
+    return this.page
+      .locator("#product-grid")
+      .getByRole("link", { name: productName })
+      .first();
   }
 
-  // ── Actions ────────────────────────────────────────────────────────────────
+  // ── Sort ───────────────────────────────────────────────────────────────────
 
   /**
-   * Clicks a product card by name and waits for navigation to the
-   * product detail page.
-   *
-   * @param {string} productName - Visible product name.
-   * @returns {Promise<void>}
+   * Selects a sort option and waits for the grid to re-render.
+   * @param optionLabel - e.g. 'Price, low to high'
    */
-  async clickProduct(productName) {
+  async sortBy(optionLabel: string): Promise<void> {
+    await this.sortBySelect.selectOption({ label: optionLabel });
+    await this.page.locator(".loading-overlay").waitFor({ state: "hidden" });
+    await this.productGrid.waitFor({ state: "visible" });
+  }
+
+  // ── Filter drawer ──────────────────────────────────────────────────────────
+
+  /** Opens the filter drawer and waits for it to be visible. */
+  async openFilterDrawer(): Promise<void> {
+    await this.filterButton.click();
+    await this.filterDrawer.waitFor({ state: "visible" });
+  }
+
+  /** Closes the filter drawer via the ✕ button. */
+  async closeFilterDrawer(): Promise<void> {
+    await this.filterDrawerClose.click();
+    await this.filterDrawer.waitFor({ state: "hidden" });
+  }
+
+  /**
+   * Opens the Availability sub-panel inside the filter drawer.
+   * Requires the drawer to be open first.
+   */
+  async openAvailabilityFilter(): Promise<void> {
+    await this.availabilitySection.click();
+    await this.inStockCheckbox.waitFor({ state: "visible" });
+  }
+
+  /**
+   * Filters by "In stock" availability.
+   * Handles the full flow: open drawer → open sub-panel → check → apply.
+   */
+  async filterByInStock(): Promise<void> {
+    await this.openFilterDrawer();
+    await this.openAvailabilityFilter();
+    await this.inStockCheckbox.check();
+    // Shopify applies filter automatically and updates the URL
+    await this.page.waitForURL(/filter\.v\.availability=1/);
+    await this.productGrid.waitFor({ state: "visible" });
+  }
+
+  /**
+   * Filters by "Out of stock" availability.
+   */
+  async filterByOutOfStock(): Promise<void> {
+    await this.openFilterDrawer();
+    await this.openAvailabilityFilter();
+    await this.outOfStockCheckbox.check();
+    await this.page.waitForURL(/filter\.v\.availability=0/);
+    await this.productGrid.waitFor({ state: "visible" });
+  }
+
+  /**
+   * Opens the Price sub-panel inside the filter drawer.
+   */
+  async openPriceFilter(): Promise<void> {
+    await this.priceSection.click();
+    await this.priceFromInput.waitFor({ state: "visible" });
+  }
+
+  /**
+   * Filters products by a price range.
+   * @param from - Minimum price (e.g. 0)
+   * @param to   - Maximum price (e.g. 10)
+   */
+  async filterByPriceRange(from: number, to: number): Promise<void> {
+    await this.openFilterDrawer();
+    await this.openPriceFilter();
+    await this.priceFromInput.fill(String(from));
+    await this.priceToInput.fill(String(to));
+    await this.priceToInput.press("Enter");
+    await this.page.waitForURL(/filter\.v\.price/);
+    await this.productGrid.waitFor({ state: "visible" });
+  }
+
+  /** Removes all active filters by clicking "Remove all". */
+  async removeAllFilters(): Promise<void> {
+    await this.removeAllFiltersButton.click();
+    await this.page.waitForURL("/collections/all");
+    await this.productGrid.waitFor({ state: "visible" });
+  }
+
+  /**
+   * Returns the text of all active filter pills.
+   * e.g. ['Availability: In stock', '$0.00 -$10.00']
+   */
+  async getActiveFilterLabels(): Promise<string[]> {
+    const pills = this.activeFilterPills;
+    return (await pills.allInnerTexts()).map((t) => t.replace("×", "").trim());
+  }
+
+  // ── Product helpers ────────────────────────────────────────────────────────
+
+  /** Returns the product count text, e.g. "13 products" or "1 of 13 products". */
+  async getProductCount(): Promise<string> {
+    await this.productCount.waitFor({ state: "visible" });
+    return ((await this.productCount.textContent()) ?? "").trim();
+  }
+
+  /** Returns all visible product names in the current grid state. */
+  async getAllProductNames(): Promise<string[]> {
+    await this.productGrid.waitFor({ state: "visible" });
+    return this.productGrid.getByRole("heading", { level: 5 }).allInnerTexts();
+  }
+
+  /**
+   * Clicks a product and waits for navigation to its detail page.
+   * @param productName - Visible product name.
+   */
+  async clickProduct(productName: string): Promise<void> {
     const link = this.getProductLink(productName);
-    await link.waitFor({ state: 'visible' });
+    await link.waitFor({ state: "visible" });
     await link.click();
-    // Wait until the browser leaves the collections URL.
     await this.page.waitForURL(/\/products\//);
   }
 
   /**
-   * Selects a sorting option from the "Sort by" dropdown and waits for
-   * the product grid to re-render.
-   *
-   * @param {string} optionLabel - Visible option text, e.g. 'Price, low to high'.
-   * @returns {Promise<void>}
+   * Checks whether a specific product card shows the "Sold out" badge.
+   * @param productName - Visible product name.
    */
-  async sortBy(optionLabel) {
-    await this.sortBySelect.selectOption({ label: optionLabel });
-    /**
-     * After sorting, Shopify re-renders the grid via AJAX.
-     * Waiting for the loading overlay to disappear confirms the grid is stable.
-     */
-    await this.page.locator('.loading-overlay').waitFor({ state: 'hidden' });
-    await this.productGrid.waitFor({ state: 'visible' });
+  async isProductSoldOut(productName: string): Promise<boolean> {
+    // Locates the product container that contains the specific product name
+    const productItem = this.page.locator("listitem", { hasText: productName });
+
+    // Checks if the "Sold out" badge (ref e72 in your snapshot) exists within that item
+    return await productItem.getByText("Sold out", { exact: true }).isVisible();
   }
 
-  /**
-   * Returns the total product count displayed on the page (e.g. "13 products").
-   *
-   * @returns {Promise<string>}
-   */
-  async getProductCount() {
-    await this.productCount.waitFor({ state: 'visible' });
-    return (await this.productCount.textContent()).trim();
+  /** Returns the names of all products marked as "Sold out". */
+  async getSoldOutProductNames(): Promise<string[]> {
+    await this.productGrid.waitFor({ state: "visible" });
+    const cards = this.productGrid.locator(".product-card-wrapper").filter({
+      has: this.page.locator(".badge").filter({ hasText: "Sold out" }),
+    });
+    return (await cards.getByRole("heading", { level: 5 }).allInnerTexts()).map(
+      (n) => n.trim(),
+    );
   }
 
-  /**
-   * Returns an array of all visible product names in the current grid state.
-   *
-   * @returns {Promise<string[]>}
-   */
-  async getAllProductNames() {
-    await this.productGrid.waitFor({ state: 'visible' });
-    const links = this.productGrid.getByRole('heading', { level: 5 });
-    return links.allInnerTexts();
+  /** Returns the names of all products marked as "Sale". */
+  async getSaleProductNames(): Promise<string[]> {
+    await this.productGrid.waitFor({ state: "visible" });
+    const cards = this.productGrid
+      .locator(".product-card-wrapper")
+      .filter({ has: this.page.locator(".badge").filter({ hasText: "Sale" }) });
+    return (await cards.getByRole("heading", { level: 5 }).allInnerTexts()).map(
+      (n) => n.trim(),
+    );
   }
 
-  /**
-   * Checks whether a specific product is marked as "Sold out".
-   *
-   * @param {string} productName - Visible product name.
-   * @returns {Promise<boolean>}
-   */
-  async isProductSoldOut(productName) {
-    /**
-     * Scope the badge check to the card wrapper that contains the product link,
-     * avoiding false positives from other cards.
-     */
-    const card = this.productGrid
-      .locator('.product-card-wrapper')
-      .filter({ has: this.page.getByRole('link', { name: productName, exact: true }) });
+  // ── Cart drawer ────────────────────────────────────────────────────────────
 
-    const soldOutBadge = card.locator('.badge').filter({ hasText: 'Sold out' });
-    return soldOutBadge.isVisible();
-  }
-
-  /**
-   * Returns the names of all products currently marked as "Sold out".
-   *
-   * @returns {Promise<string[]>}
-   */
-  async getSoldOutProductNames() {
-    await this.productGrid.waitFor({ state: 'visible' });
-
-    const soldOutCards = this.productGrid
-      .locator('.product-card-wrapper')
-      .filter({ has: this.page.locator('.badge').filter({ hasText: 'Sold out' }) });
-
-    const names = await soldOutCards
-      .getByRole('heading', { level: 5 })
-      .allInnerTexts();
-
-    return names.map((n) => n.trim());
-  }
-
-  /**
-   * Returns the names of all products currently marked as "Sale".
-   *
-   * @returns {Promise<string[]>}
-   */
-  async getSaleProductNames() {
-    await this.productGrid.waitFor({ state: 'visible' });
-
-    const saleCards = this.productGrid
-      .locator('.product-card-wrapper')
-      .filter({ has: this.page.locator('.badge').filter({ hasText: 'Sale' }) });
-
-    const names = await saleCards
-      .getByRole('heading', { level: 5 })
-      .allInnerTexts();
-
-    return names.map((n) => n.trim());
-  }
-
-  /**
-   * Opens the cart drawer by clicking the cart icon and waits until
-   * the drawer is visible.
-   *
-   * @returns {Promise<void>}
-   */
-  async openCartDrawer() {
+  /** Opens the cart drawer. */
+  async openCartDrawer(): Promise<void> {
     await this.cartIcon.click();
-    await this.cartDrawer.waitFor({ state: 'visible' });
+    await this.cartDrawer.waitFor({ state: "visible" });
   }
 
-  /**
-   * Closes the cart drawer and waits until it leaves the DOM/visibility.
-   *
-   * @returns {Promise<void>}
-   */
-  async closeCartDrawer() {
+  /** Closes the cart drawer. */
+  async closeCartDrawer(): Promise<void> {
     await this.cartDrawerClose.click();
-    await this.cartDrawer.waitFor({ state: 'hidden' });
+    await this.cartDrawer.waitFor({ state: "hidden" });
   }
 
-  // ── Assertions (built-in helpers for specs) ────────────────────────────────
+  // ── Assertions ─────────────────────────────────────────────────────────────
 
-  /**
-   * Asserts that the catalog page heading is visible.
-   * Useful as a post-navigation smoke check.
-   *
-   * @returns {Promise<void>}
-   */
-  async assertPageLoaded() {
-    await this.pageHeading.waitFor({ state: 'visible' });
-    await this.productGrid.waitFor({ state: 'visible' });
+  /** Asserts heading and grid are visible — post-navigation smoke check. */
+  async assertPageLoaded(): Promise<void> {
+    await this.pageHeading.waitFor({ state: "visible" });
+    await this.productGrid.waitFor({ state: "visible" });
   }
 
   /**
-   * Asserts that clicking a product navigates to its detail URL.
-   * Wraps clickProduct with a URL pattern assertion.
-   *
-   * @param {string} productName - Visible product name.
-   * @param {string | RegExp} expectedUrlPattern - URL pattern to validate, e.g. /\/products\/the-complete-snowboard/.
-   * @returns {Promise<void>}
+   * Clicks a product and asserts the resulting URL matches the expected pattern.
+   * @param productName       - Visible product name.
+   * @param expectedUrlPattern - e.g. /\/products\/the-complete-snowboard/
    */
-  async assertProductNavigation(productName, expectedUrlPattern) {
+  async assertProductNavigation(
+    productName: string,
+    expectedUrlPattern: string | RegExp,
+  ): Promise<void> {
     await this.clickProduct(productName);
     await this.page.waitForURL(expectedUrlPattern);
   }
