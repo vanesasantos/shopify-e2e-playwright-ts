@@ -56,6 +56,7 @@ export class CatalogPage {
   readonly cartIcon: Locator;
   readonly cartDrawer: Locator;
   readonly cartDrawerClose: Locator;
+  filterDrawerDetails: Locator;
 
   // Logo/brand link → navigates to homepage
 
@@ -102,28 +103,53 @@ export class CatalogPage {
     // Product count — e.g. "13 products" or "1 of 13 products"
     this.productCount = page.locator("#ProductCount");
 
-    // ── Filter drawer ───────────────────────────────────────────────────────
-    this.filterButton = page.locator("summary").filter({ hasText: "Filter" });
-    this.filterDrawer = page.locator(".menu-drawer");
-    this.filterDrawerClose = page.getByRole("button", { name: "Close" });
+    // ── Filter drawer ─────────────────────────────────────────────────────────
+    //this.filterDrawer = page.locator(".mobile-facets__wrapper");
+    // El <menu-drawer> NUNCA se oculta — jamás uses waitFor("hidden") sobre él.
+    // El estado abierto/cerrado lo controla el atributo `open` del <details> interior.
+    this.filterDrawer = page.locator(".mobile-facets__disclosure");
+
+    this.filterDrawerDetails = page.locator(".mobile-facets__details");
+
+    // El botón de abrir Y cerrar es el MISMO summary exterior — es un toggle nativo de <details>.
+    // El .mobile-facets__close--no-js está oculto por CSS cuando JS está activo.
+    this.filterDrawerClose = page.locator(
+      "summary.mobile-facets__open-wrapper",
+    );
+    this.filterButton = page.locator("summary.mobile-facets__open-wrapper");
+
+    //this.filterButton = page.locator("summary").filter({ hasText: "Filter" });
+    //this.filterDrawerClose = this.filterDrawer.locator(
+    //  "summary.mobile-facets__open-wrapper",
+    //);
     this.filterDrawerTitle = page.getByRole("heading", { name: "Filter" });
 
-    // Main sections inside drawer
-    this.availabilitySection = page.getByRole("button", {
-      name: "Availability",
-    });
-    this.priceSection = page.getByRole("button", { name: "Price" });
+    // Sin { visible: true } en la definición: ese filtro se aplica dinámicamente
+    // en el momento de la aserción, no al construir el locator.
+    this.availabilitySection = this.filterDrawer
+      .locator("summary")
+      .filter({ hasText: "Availability" });
+
+    this.priceSection = this.filterDrawer
+      .locator("summary")
+      .filter({ hasText: "Price" });
 
     // Availability sub-panel checkboxes
-    this.inStockCheckbox = page.getByLabel(/In stock/);
-    this.outOfStockCheckbox = page.getByLabel(/Out of stock/);
+    // Cambiar de input a label — el label es el elemento clickeable real
+    this.inStockCheckbox = page.locator(
+      'label[for="Filter-filter.v.availability-mobile-1"]',
+    );
+    this.outOfStockCheckbox = page.locator(
+      'label[for="Filter-filter.v.availability-mobile-2"]',
+    );
+
     this.availabilityBackButton = page
       .getByRole("button", { name: "Availability" })
       .filter({ hasText: "←" });
 
     // Price sub-panel inputs
-    this.priceFromInput = page.getByLabel("From");
-    this.priceToInput = page.getByLabel("To");
+    this.priceFromInput = page.locator("#Mobile-Filter-Price-GTE");
+    this.priceToInput = page.locator("#Mobile-Filter-Price-LTE");
     this.priceMaxLabel = page.getByText(/The highest price is/);
     this.priceBackButton = page
       .getByRole("button", { name: "Price" })
@@ -145,7 +171,7 @@ export class CatalogPage {
 
   /** Navigates directly to the catalog page. */
   async goto(): Promise<void> {
-    await this.page.goto("/collections/all");
+    await this.page.goto("/collections/all", { waitUntil: "domcontentloaded" });
     await this.productGrid.waitFor({ state: "visible" });
   }
 
@@ -185,15 +211,52 @@ export class CatalogPage {
   // ── Filter drawer ──────────────────────────────────────────────────────────
 
   /** Opens the filter drawer and waits for it to be visible. */
-  async openFilterDrawer(): Promise<void> {
-    await this.filterButton.click();
-    await this.filterDrawer.waitFor({ state: "visible" });
-  }
+  // CatalogPage.ts
 
+  /* async openFilterDrawer(): Promise<void> {
+    if (await this.filterDrawer.isVisible()) return;
+    await this.filterButton.click();
+    await this.filterDrawer.waitFor({ state: "visible", timeout: 8000 });
+
+    // Esperar a que el contenedor interno deje de tener la clase
+    // 'has-submenu' que bloquea la visibilidad de los summary internos.
+    // Dawn JS añade/quita esta clase para mostrar el panel de filtros.
+    await this.page.waitForFunction(
+      () => {
+        const main = document.querySelector(".mobile-facets__main");
+        return main && !main.classList.contains("has-submenu");
+      },
+      { timeout: 8000 },
+    );
+  } */
+
+  async openFilterDrawer(): Promise<void> {
+    const isOpen = await this.filterDrawer.evaluate((el) =>
+      el.hasAttribute("open"),
+    );
+    if (isOpen) return;
+    await this.filterButton.click();
+    await this.page.waitForFunction(
+      () =>
+        document
+          .querySelector(".mobile-facets__disclosure")
+          ?.hasAttribute("open"),
+      { timeout: 8000 },
+    );
+  }
+  /** Closes the filter drawer via the ✕ button. */
   /** Closes the filter drawer via the ✕ button. */
   async closeFilterDrawer(): Promise<void> {
     await this.filterDrawerClose.click();
-    await this.filterDrawer.waitFor({ state: "hidden" });
+
+    // Esperar que <details> pierda el atributo open — no que el wrapper se oculte
+    await this.page.waitForFunction(
+      () =>
+        !document
+          .querySelector(".mobile-facets__disclosure")
+          ?.hasAttribute("open"),
+      { timeout: 8000 },
+    );
   }
 
   /**
@@ -202,30 +265,33 @@ export class CatalogPage {
    */
   async openAvailabilityFilter(): Promise<void> {
     await this.availabilitySection.click();
-    await this.inStockCheckbox.waitFor({ state: "visible" });
+    // Esperar al input, no al label, para detectar visibilidad real
+    await this.page
+      .locator("#Filter-filter\\.v\\.availability-mobile-1")
+      .waitFor({ state: "visible" });
   }
 
-  /**
-   * Filters by "In stock" availability.
-   * Handles the full flow: open drawer → open sub-panel → check → apply.
-   */
   async filterByInStock(): Promise<void> {
     await this.openFilterDrawer();
     await this.openAvailabilityFilter();
-    await this.inStockCheckbox.check();
-    // Shopify applies filter automatically and updates the URL
+    await this.inStockCheckbox.click();
     await this.page.waitForURL(/filter\.v\.availability=1/);
+    // Esperar que aparezca "of 13 products" (formato de resultado filtrado)
+    // en lugar de negar "13 products" (que siempre está presente)
+    await this.page.waitForFunction(() =>
+      document.querySelector("#ProductCount")?.textContent?.includes("of 13"),
+    );
     await this.productGrid.waitFor({ state: "visible" });
   }
 
-  /**
-   * Filters by "Out of stock" availability.
-   */
   async filterByOutOfStock(): Promise<void> {
     await this.openFilterDrawer();
     await this.openAvailabilityFilter();
-    await this.outOfStockCheckbox.check();
+    await this.outOfStockCheckbox.click();
     await this.page.waitForURL(/filter\.v\.availability=0/);
+    await this.page.waitForFunction(() =>
+      document.querySelector("#ProductCount")?.textContent?.includes("of 13"),
+    );
     await this.productGrid.waitFor({ state: "visible" });
   }
 
@@ -234,7 +300,9 @@ export class CatalogPage {
    */
   async openPriceFilter(): Promise<void> {
     await this.priceSection.click();
-    await this.priceFromInput.waitFor({ state: "visible" });
+    await this.page
+      .locator("#Mobile-Filter-Price-GTE")
+      .waitFor({ state: "visible" });
   }
 
   /**
@@ -249,13 +317,32 @@ export class CatalogPage {
     await this.priceToInput.fill(String(to));
     await this.priceToInput.press("Enter");
     await this.page.waitForURL(/filter\.v\.price/);
+    await this.page.waitForFunction(() =>
+      document.querySelector("#ProductCount")?.textContent?.includes("of 13"),
+    );
     await this.productGrid.waitFor({ state: "visible" });
   }
-
   /** Removes all active filters by clicking "Remove all". */
   async removeAllFilters(): Promise<void> {
+    const isOpen = await this.filterDrawer.evaluate((el) =>
+      el.hasAttribute("open"),
+    );
+    if (isOpen) {
+      await this.closeFilterDrawer();
+    }
+
     await this.removeAllFiltersButton.click();
-    await this.page.waitForURL("/collections/all");
+
+    // waitForURL no sirve aquí: la URL ya ES /collections/all antes del click.
+    // Esperar que el ProductCount vuelva a "13 products" (sin "of").
+    await this.page.waitForFunction(
+      () => {
+        const text = document.querySelector("#ProductCount")?.textContent ?? "";
+        return text.trim() === "13 products";
+      },
+      { timeout: 10000 },
+    );
+
     await this.productGrid.waitFor({ state: "visible" });
   }
 
@@ -279,7 +366,9 @@ export class CatalogPage {
   /** Returns all visible product names in the current grid state. */
   async getAllProductNames(): Promise<string[]> {
     await this.productGrid.waitFor({ state: "visible" });
-    return this.productGrid.getByRole("heading", { level: 5 }).allInnerTexts();
+    return (
+      await this.productGrid.getByRole("heading", { level: 3 }).allInnerTexts()
+    ).map((n) => n.trim());
   }
 
   /**
@@ -298,11 +387,13 @@ export class CatalogPage {
    * @param productName - Visible product name.
    */
   async isProductSoldOut(productName: string): Promise<boolean> {
-    // Locates the product container that contains the specific product name
-    const productItem = this.page.locator("listitem", { hasText: productName });
-
-    // Checks if the "Sold out" badge (ref e72 in your snapshot) exists within that item
-    return await productItem.getByText("Sold out", { exact: true }).isVisible();
+    const productItem = this.productGrid
+      .locator("li", { hasText: productName })
+      .first();
+    return await productItem
+      .getByText("Sold out", { exact: true })
+      .first()
+      .isVisible();
   }
 
   /** Returns the names of all products marked as "Sold out". */
