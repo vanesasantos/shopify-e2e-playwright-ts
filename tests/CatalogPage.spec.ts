@@ -104,8 +104,6 @@ test.describe("Catalog Page", () => {
     });
 
     test("returns exactly 3 sold out products", async () => {
-      // Use a locator directly instead of resolving the names into an array first
-      // En el test
       const soldOutLocator = catalogPage.productGrid
         .locator(".product-card-wrapper")
         .filter({
@@ -116,8 +114,6 @@ test.describe("Catalog Page", () => {
     });
 
     test("returns correct list of sold out product names", async () => {
-      // Use a locator that finds the text of products that have a "Sold out" sibling/parent
-      // This example assumes your Page Object has a locator for these specific names
       const soldOutNames = catalogPage.productGrid
         .locator(".product-card-wrapper")
         .filter({
@@ -138,9 +134,6 @@ test.describe("Catalog Page", () => {
           hasText: "The Compare at Price Snowboard",
         })
         .first();
-
-      // Fix: Use .first() to pick one of the matching badges,
-      // or use a more specific selector if you know which one should be visible.
       const saleBadge = productCard.getByText("Sale", { exact: true }).first();
 
       await expect(saleBadge).toBeVisible();
@@ -164,13 +157,7 @@ test.describe("Catalog Page", () => {
     });
 
     test("re-renders grid after sorting alphabetically Z-A", async () => {
-      // 1. Perform the sort action
       await catalogPage.sortBy("Alphabetically, Z-A");
-
-      // 2. Best Practice: If sorting changes the URL (e.g., ?sort_by=title-descending),
-      // wait for it to ensure the network request has finished.
-      // await expect(page).toHaveURL(/sort_by=title-descending/);
-
       const expectedOrder = [
         "The Videographer Snowboard",
         "The Out of Stock Snowboard",
@@ -186,15 +173,10 @@ test.describe("Catalog Page", () => {
         "Selling Plans Ski Wax",
         "Gift Card",
       ];
-
-      // 3. Use getByRole for better accessibility and stability.
-      // We locate the headings within the list items specifically.
       const productLinks = catalogPage.page
         .getByRole("listitem")
         .getByRole("heading", { level: 3 })
         .getByRole("link");
-
-      // toHaveText will automatically retry until the products re-appear and match the order
       await expect(productLinks).toHaveText(expectedOrder);
     });
 
@@ -231,13 +213,8 @@ test.describe("Catalog Page", () => {
       await expect(catalogPage.filterDrawer).toBeVisible();
     });
 
-    // CatalogPage.spec.ts
-
-    // En el test, como workaround directo:
     test("filter drawer displays Availability and Price sections", async () => {
       await catalogPage.openFilterDrawer();
-      // En lugar de toBeVisible(), verificar que el elemento existe en el DOM
-      // y que el texto es correcto — sin chequeo de visibilidad CSS
       await expect(catalogPage.availabilitySection).toHaveText(/Availability/);
       await expect(catalogPage.priceSection).toHaveText(/Price/);
     });
@@ -245,8 +222,6 @@ test.describe("Catalog Page", () => {
     test("filter drawer closes when clicking X button", async () => {
       await catalogPage.openFilterDrawer();
       await catalogPage.closeFilterDrawer();
-
-      // Verificar por atributo, no por visibilidad CSS
       await expect(catalogPage.filterDrawer).not.toHaveAttribute("open");
     });
 
@@ -276,7 +251,7 @@ test.describe("Catalog Page", () => {
     });
 
     test("filtering by price range $0-$9.99 shows products including Selling Plans Ski Wax", async () => {
-      await catalogPage.filterByPriceRange(0, 9.99); // bajo el límite a 9
+      await catalogPage.filterByPriceRange(0, 9.99);
       const count = await catalogPage.getProductCount();
       expect(count).toContain("1");
       const names = await catalogPage.getAllProductNames();
