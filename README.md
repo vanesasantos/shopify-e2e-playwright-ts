@@ -1,50 +1,51 @@
 Playwright Automation Suite - Shopify Sandbox
+This repository contains an automated test suite using Playwright with TypeScript, focused on validating critical catalog functionalities and filtering processes in a Shopify test store (Hydrogen/Liquid).
 
-Este repositorio contiene una suite de pruebas automatizadas utilizando Playwright con TypeScript, enfocada en validar las funcionalidades críticas del catálogo y procesos de filtrado en una tienda Shopify de pruebas (Hydrogen/Liquid).
+🚀 Key Features
+Page Object Model (POM) Design Pattern: Maintainable and scalable structure.
 
-🚀 Características Principales
+Catalog Testing: Validation of product visibility, as well as "Sale" and "Sold out" badges.
 
-- Patrón de Diseño Page Object Model (POM): Estructura mantenible y escalable.
-- Pruebas de Catálogo: Validación de visibilidad de productos, badges de "Sale" y "Sold out".
-- Gestión de Filtros: Pruebas de apertura/cierre de cajones de filtrado y resolución de conflictos de locators en entornos responsive (Desktop vs Mobile).
-- Validación de Ordenamiento: Verificación de lógica de ordenamiento por precio, fecha y orden alfabético.
+Filter Management: Tests for opening/closing filter drawers and resolving locator conflicts in responsive environments (Desktop vs. Mobile).
 
-🛠️ Tecnologías Utilizadas
+Sorting Validation: Verification of sorting logic by price, date, and alphabetical order.
 
-- Playwright - Framework de automatización.
-- TypeScript - Lenguaje para tipado seguro.
-- GitHub Actions - Para CI/CD.
+🛠️ Technologies Used
+Playwright – Automation framework.
 
-📋 Requisitos Previos
-- Node.js (v18 o superior)
-- npm o yarn
+TypeScript – Language for type safety.
 
-🔧 Instalación y Configuración
+GitHub Actions – For CI/CD.
 
-Clonar el repositorio:
+📋 Prerequisites
+Node.js (v18 or higher)
 
-Bash git clone https://github.com/vanesasantos/shopify-e2e-playwright-ts
+npm or yarn
 
+🔧 Installation and Setup
+Clone the repository:
+
+Bash
+git clone https://github.com/vanesasantos/shopify-e2e-playwright-ts
 cd shopify-e2e-playwright-ts
+Install dependencies:
 
-Instalar dependencias:
+Bash
+npm install
+Install Playwright browsers:
 
-Bash npm install
+Bash
+npx playwright install
+🧪 Running Tests
+Run all tests:
 
-Instalar navegadores de Playwright:
+Bash
+npx playwright test
+Run tests in UI mode (interactive):
 
-Bash npx playwright install
+Bash
+npx playwright test --ui
+Run a specific file:
 
-🧪 Ejecución de Pruebas
-
-Ejecutar todos los tests:
-
-Bash npx playwright test
-
-Ejecutar tests en modo UI (interactivo):
-
-Bash npx playwright test --ui
-
-Ejecutar un archivo específico:
-
-Bash npx playwright test tests/CatalogPage.spec.ts
+Bash
+npx playwright test tests/CatalogPage.spec.ts
